@@ -1,125 +1,37 @@
-// VERY IMPORTANT PIN NUMBERS - DONT FUCK THEM UP
+#include <WiFi.h>
+#include <WiFiUdp.h>
+
+#include "safeMotorControl.h"
+
+// VERY IMPORTANT MOTOR PIN NUMBERS - DONT FUCK THEM UP
 #define LMF_PIN_MACRO 4
 #define LMR_PIN_MACRO 16
 #define RMF_PIN_MACRO 5
 #define RMR_PIN_MACRO 17
 
-// The safeMotoControl class performs validation on all motor control commands
-// This class is specific to this project
-class safeMotorControl{
-private:
-  bool set_LMF = false;
-  bool set_LMR = false;
-  bool set_RMF = false;
-  bool set_RMR = false;
-  int LMF_PIN = -1;
-  int LMR_PIN = -1;
-  int RMF_PIN = -1;
-  int RMR_PIN = -1;
-
-  void writeZeroToAll(){
-    digitalWrite(LMF_PIN, LOW);
-    digitalWrite(LMR_PIN, LOW);
-    digitalWrite(RMF_PIN, LOW);
-    digitalWrite(RMR_PIN, LOW);
-  }
-
-  // Verify that pin settings wont blow shit up
-  bool validatePinSettings(){
-    if(this->set_LMF && this->set_LMR){ // Left motor forward and reverse at the same time
-      this->zeroAllVariables(); // Zero all the variables to prevent anything going wrong
-      return false;
-    }
-    if(this->set_RMF && this->set_RMR){ // Right motor forward and reverse at the same time
-      this->zeroAllVariables(); // Zero all the variables to prevent anything going wrong
-      return false;
-    }
-    return true;
-  }
-
-  /*
-    validateSetMotors provides a safe way to set motor states, if you try to set the pins up in an unsafe way it just wont do it :)
-  */
-  bool validateSetMotors(){
-    if(!validatePinSettings()){
-      return false;
-    }else{
-      digitalWrite(this->LMF_PIN, this->set_LMF?HIGH:LOW);
-      digitalWrite(this->LMR_PIN, this->set_LMR?HIGH:LOW);
-      digitalWrite(this->RMF_PIN, this->set_RMF?HIGH:LOW);
-      digitalWrite(this->RMR_PIN, this->set_RMR?HIGH:LOW);
-    }
-    return true;
-  }
-
-
-public:
-  void zeroAllVariables(){
-    set_LMF = false;
-    set_LMR = false;
-    set_RMF = false;
-    set_RMR = false;
-  }
-
-  safeMotorControl(int LMF_PIN, int LMR_PIN, int RMF_PIN, int RMR_PIN){
-    this->LMF_PIN = LMF_PIN;
-    this->LMR_PIN = LMR_PIN;
-    this->RMF_PIN = RMF_PIN;
-    this->RMR_PIN = RMR_PIN;
-    pinMode(this->LMF_PIN, OUTPUT);
-    pinMode(this->LMR_PIN, OUTPUT);
-    pinMode(this->RMF_PIN, OUTPUT);
-    pinMode(this->RMR_PIN, OUTPUT);
-    this->writeZeroToAll();
-  }
-  ~safeMotorControl(){
-    this->zeroAllVariables();
-    this->validateSetMotors();
-  }
-
-  void driveForward(){
-    this->zeroAllVariables();
-    this->validateSetMotors();
-    set_LMF = true;
-    set_RMF = true;
-    this->validateSetMotors();
-  }
-
-  void driveBackward(){
-    this->zeroAllVariables();
-    this->validateSetMotors();
-    set_LMR = true;
-    set_RMR = true;
-    this->validateSetMotors();
-  }
-
-  void turnLeft(){
-    this->zeroAllVariables();
-    this->validateSetMotors();
-    set_LMR = true;
-    set_RMF = true;
-    this->validateSetMotors();
-  }
-
-  void turnRight(){
-    this->zeroAllVariables();
-    this->validateSetMotors();
-    set_LMF = true;
-    set_RMR = true;
-    this->validateSetMotors();
-  }
-
-  void stop(){
-    this->zeroAllVariables();
-    this->validateSetMotors();
-  }
-
-};
+// Less important stuff - Wifi stuffs
+#define PORT 52727
+#define WAP_SSID "A"
+#define WAP_PASS "AAAAAAAA"
 
 safeMotorControl motorControl(LMF_PIN_MACRO, LMR_PIN_MACRO, RMF_PIN_MACRO, RMR_PIN_MACRO);
+WiFiUDP Udp;
 
 void setup(){
-  
+  motorControl.stop(); // Absolutely ensure that none of the motor pins are active (dont really need to do this, the class does it itself)
+  Serial.begin(115200);
+  Serial.println();
+  WiFi.begin(WAP_SSID, WAP_PASS);
+  while (WiFi.status() != WL_CONNECTED){
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println();
+  Serial.print("Connected, IP address: ");
+  Serial.println(WiFi.localIP());
+  Serial.print("Beginning UDP port on ");
+  Serial.println(PORT);
+  Udp.begin(PORT);
 }
 
 void loop() {
@@ -133,4 +45,9 @@ void loop() {
   delay(1000);
   motorControl.stop();
   delay(1000);
+  // Send test data over wifi to 192.168.159.25
+  Udp.beginPacket("192.168.159.25", PORT);
+  size_t x = Udp.println("AMONG US");
+  Serial.println(x);
+  Udp.endPacket();
 }
