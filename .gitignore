@@ -1,4 +1,4 @@
 
 *.out
-esp32code/wifiInfo.h
-remoteControlledCar/esp32code/wifiInfo.h
+*/wifiInfo.h
+*/*/wifiInfo.h
