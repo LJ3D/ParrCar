@@ -1,31 +1,13 @@
-// Need to clean up these includes lol
-// Not using a bunch of these probably
-#include <stdio.h> 
-#include <stdlib.h> 
+#include <ncurses.h> // Using ncurses mainly for getch() lol
+#include <string>
 #include <unistd.h> 
-#include <string.h> 
-#include <sys/types.h> 
 #include <sys/socket.h> 
 #include <arpa/inet.h> 
-#include <netinet/in.h> 
-#include <netinet/tcp.h>
-#include <iostream>
-#include <chrono>
-#include <vector>
-#include <algorithm>
-#include <numeric>
-#include <ncurses.h>
 
-#define SERV_PORT 52727
-
-/*
-
-    Creates a server that listens for a connection on port 52727
-    When a connection is made, it will send user input to the client
-
-*/
+#define SERV_PORT 52727 // The port the server is listening on
 
 int main(){
+    // Initialise ncurses:
     initscr();
     cbreak();
     noecho();
@@ -34,63 +16,68 @@ int main(){
     wrefresh(win);
     
     // Socket stuff
-    int fd;
-    char buffer[1024];
-    int opt;
+    int fd; // The file descriptor for the socket
+    int opt; // Used for setting socket options
+    struct sockaddr_in address; // The address of the server
 
-    struct sockaddr_in address;
-
+    // Create the socket:
     if((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
         perror("Socket creation failed");
         exit(EXIT_FAILURE);
     }
 
+    // Set the socket options:
     if(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))){
         perror("setsockopt");
         exit(EXIT_FAILURE);
     }
-    address.sin_addr.s_addr = INADDR_ANY;
+
+    // Set the address:
+    address.sin_addr.s_addr = INADDR_ANY; // Listen on all interfaces
     address.sin_family = AF_INET;
-    address.sin_port = htons(SERV_PORT);
+    address.sin_port = htons(SERV_PORT); // Listen on the specified port
+
+    // Bind the socket to the address:
     if(bind(fd, (struct sockaddr *)&address, sizeof(address)) < 0){
         perror("bind failed");
         exit(EXIT_FAILURE);
     }
+
+    // Listen for connections:
     if(listen(fd, 3) < 0){
         perror("listen");
         exit(EXIT_FAILURE);
     }
+
+    // Wait for and accept a new connection:
     int addrlen = sizeof(address);
     int new_socket;
     mvwprintw(win, 2, 0, "Waiting for connection...");
-    refresh();
     wrefresh(win);
     if((new_socket = accept(fd, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0){
         perror("accept");
         exit(EXIT_FAILURE);
     }
     mvwprintw(win, 2, 0, "Connected to client");
-    refresh();
     wrefresh(win);
+    // The main control loop:
     while(true){
         mvwprintw(win, 0, 0, "Press a key to send to client (press e to exit)");
-        refresh();
         wrefresh(win);
-        int c = getch();
+        int c = getch(); // Get a single char of input
         if(c == 'e'){
-            break;
+            break; // Exit the main loop if the user wants to
         }
         int bytes_sent = -1;
-        if(c != ERR){
+        if(c != ERR){ // As long as getch didnt give us an error, send c+"\n" to the car
             std::string s(1, c);
             s += '\n';
             bytes_sent = send(new_socket, (s.c_str()), s.length(), 0);
         }
         mvwprintw(win, 1, 0, "Sent %d bytes", bytes_sent);
-        refresh();
         wrefresh(win);
     }
-    endwin();
-    close(fd);
+    endwin(); // End ncurses
+    close(fd); // Close the socket
     return 0;
 }
