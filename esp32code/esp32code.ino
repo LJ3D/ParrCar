@@ -23,6 +23,7 @@ WiFiMulti wm;
 void setup(){
   mc.stop(); // Ensure motors arent spinning
   Serial.begin(115200);
+  WiFi.mode(WIFI_STA); // Fixes laggy wifi i think
   wm.addAP(WAP_SSID, WAP_PASS);
   while(wm.run() != WL_CONNECTED){
     Serial.print(".");
@@ -49,6 +50,7 @@ void loop(){
   while(c.connected()){
     // Shout among us sussy balls at the server
     c.println("among us sussy balls");
+    Serial.println("Sent message");
     delay(2000);
   }
 
