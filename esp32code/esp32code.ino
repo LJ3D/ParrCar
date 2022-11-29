@@ -10,10 +10,9 @@
 #define RMR_PIN_MACRO 17
 
 // Less important stuff - Wifi stuffs
-#define REMOTE_IP "192.168.159.25"
+#define REMOTE_IP "192.168.1.140"
 #define REMOTE_PORT 52727
-#define WAP_SSID "A"
-#define WAP_PASS "AAAAAAAA"
+#include "wifiInfo.h" // This info is not included in the repo for obvious reasons ;) SSID + PASS
 #define MAX_PACKET_SIZE 255
 
 safeMotorControl mc(LMF_PIN_MACRO, LMR_PIN_MACRO, RMF_PIN_MACRO, RMR_PIN_MACRO);
@@ -24,6 +23,7 @@ void setup(){
   mc.stop(); // Ensure motors arent spinning
   Serial.begin(115200);
   WiFi.mode(WIFI_STA); // Fixes laggy wifi i think
+  // Ensure TCP is not delayed:
   wm.addAP(WAP_SSID, WAP_PASS);
   while(wm.run() != WL_CONNECTED){
     Serial.print(".");
@@ -48,10 +48,32 @@ void loop(){
   }
   Serial.println("Connected");
   while(c.connected()){
-    // Shout among us sussy balls at the server
-    c.println("among us sussy balls");
-    Serial.println("Sent message");
-    delay(2000);
+    // Listen for a command
+    char cmd[MAX_PACKET_SIZE];
+    c.read((uint8_t*)cmd, MAX_PACKET_SIZE);
+    Serial.print("Received command: ");
+    Serial.println(cmd);
+    // Simple switch for the commands
+    switch(cmd[0]){
+      case 'w':
+        mc.driveForward();
+        break;
+      case 's':
+        mc.driveBackward();
+        break;
+      case 'a':
+        mc.turnLeft();
+        break;
+      case 'd':
+        mc.turnRight();
+        break;
+      case 'q':
+        mc.stop();
+        break;
+      default:
+        Serial.println("Invalid command");
+        break;
+    }
   }
-
+  Serial.println("!!! Disconnected");
 }
