@@ -1,5 +1,5 @@
 #include <WiFi.h>
-#include <WiFiServer.h>
+#include <WiFiMulti.h>
 
 #include "safeMotorControl.h"
 
@@ -10,67 +10,46 @@
 #define RMR_PIN_MACRO 17
 
 // Less important stuff - Wifi stuffs
-#define PORT 52727
+#define REMOTE_IP "192.168.159.25"
+#define REMOTE_PORT 52727
 #define WAP_SSID "A"
 #define WAP_PASS "AAAAAAAA"
 #define MAX_PACKET_SIZE 255
 
-safeMotorControl motorControl(LMF_PIN_MACRO, LMR_PIN_MACRO, RMF_PIN_MACRO, RMR_PIN_MACRO);
+safeMotorControl mc(LMF_PIN_MACRO, LMR_PIN_MACRO, RMF_PIN_MACRO, RMR_PIN_MACRO);
 
-WiFiServer server(PORT);
-WiFiClient remoteClient;
+WiFiMulti wm;
 
 void setup(){
-  motorControl.stop(); // Absolutely ensure that none of the motor pins are active (dont really need to do this, the class does it itself)
+  mc.stop(); // Ensure motors arent spinning
   Serial.begin(115200);
-  Serial.println();
-  WiFi.begin(WAP_SSID, WAP_PASS);
-  while (WiFi.status() != WL_CONNECTED){
-    delay(500);
+  wm.addAP(WAP_SSID, WAP_PASS);
+  while(wm.run() != WL_CONNECTED){
     Serial.print(".");
+    delay(100);
   }
-  // Set stuff up to listen for incoming data:
-  server.begin();
-  Serial.println("Connected and set up (probably)");
+  Serial.println("Connected to WiFi");
   Serial.println(WiFi.localIP());
-}
-
-
-
-
-void checkForConnections(){
-  if(server.hasClient()){
-    if(remoteClient.connected()){
-      Serial.println("Rejected connection - already have connected client");
-      server.available().stop();
-    }else{
-      Serial.println("Connection accepted");
-      remoteClient = server.available();
-    }
-  }
-}
-
-void echoOnce(){
-  uint8_t receiveBuffer[32];
-  int received = remoteClient.read(receiveBuffer, sizeof(receiveBuffer));
-  remoteClient.write(receiveBuffer, received);
-}
-
-void mainloop(){
-  // Drive forward for a bit
-  motorControl.driveForward();
-  delay(500);
-  motorControl.stop();
-  // Send wifi data
-  remoteClient.write("AMONG US");
   delay(500);
 }
 
-void loop() {
-  Serial.println("Checking for connection...");
-  checkForConnections();
-  if(remoteClient.connected()){
-    mainloop();
+void loop(){
+  Serial.print("Connecting to ");
+  Serial.print(REMOTE_IP);
+  Serial.print(":");
+  Serial.println(REMOTE_PORT);
+  WiFiClient c;
+  if(!c.connect(REMOTE_IP, REMOTE_PORT)){
+    Serial.println("Connection failed");
+    Serial.println("Retrying in 5 seconds");
+    delay(5000);
+    return;
   }
-  delay(50);
+  Serial.println("Connected");
+  while(c.connected()){
+    // Shout among us sussy balls at the server
+    c.println("among us sussy balls");
+    delay(2000);
+  }
+
 }
