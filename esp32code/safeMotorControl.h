@@ -11,11 +11,12 @@ private:
   int RMF_PIN = -1;
   int RMR_PIN = -1;
 
-  void writeZeroToAll(){
-    digitalWrite(LMF_PIN, LOW);
-    digitalWrite(LMR_PIN, LOW);
-    digitalWrite(RMF_PIN, LOW);
-    digitalWrite(RMR_PIN, LOW);
+  // Set all the set vars to false *doesnt update the pins*
+  void zeroAllVariables(){
+    this->set_LMF = false;
+    this->set_LMR = false;
+    this->set_RMF = false;
+    this->set_RMR = false;
   }
 
   // Verify that pin settings wont blow shit up
@@ -32,7 +33,7 @@ private:
   }
 
   /*
-    validateSetMotors provides a safe way to set motor states, if you try to set the pins up in an unsafe way it just wont do it :)
+    validateSetMotors provides a safe way to set motor states, if you try to set the pins in an unsafe way it just wont do it :)
   */
   bool validateSetMotors(){
     if(!validatePinSettings()){
@@ -46,16 +47,16 @@ private:
     return true;
   }
 
-
-public:
-  void zeroAllVariables(){
-    set_LMF = false;
-    set_LMR = false;
-    set_RMF = false;
-    set_RMR = false;
+  // Zero the variables, then set the pins
+  void zeroSetVars(){
+    this->zeroAllVariables();
+    this->validateSetMotors();
   }
 
+public:
+
   safeMotorControl(int LMF_PIN, int LMR_PIN, int RMF_PIN, int RMR_PIN){
+    // Obviously this class can only save you if you set the pin numbers correctly! Always check them :)
     this->LMF_PIN = LMF_PIN;
     this->LMR_PIN = LMR_PIN;
     this->RMF_PIN = RMF_PIN;
@@ -64,48 +65,42 @@ public:
     pinMode(this->LMR_PIN, OUTPUT);
     pinMode(this->RMF_PIN, OUTPUT);
     pinMode(this->RMR_PIN, OUTPUT);
-    this->writeZeroToAll();
+    this->zeroSetVars();
   }
   ~safeMotorControl(){
-    this->zeroAllVariables();
-    this->validateSetMotors();
+    this->zeroSetVars();
   }
 
   void driveForward(){
-    this->zeroAllVariables();
-    this->validateSetMotors();
+    this->zeroSetVars();
     set_LMF = true;
     set_RMF = true;
     this->validateSetMotors();
   }
 
   void driveBackward(){
-    this->zeroAllVariables();
-    this->validateSetMotors();
+    this->zeroSetVars();
     set_LMR = true;
     set_RMR = true;
     this->validateSetMotors();
   }
 
   void turnLeft(){
-    this->zeroAllVariables();
-    this->validateSetMotors();
+    this->zeroSetVars();
     set_LMR = true;
     set_RMF = true;
     this->validateSetMotors();
   }
 
   void turnRight(){
-    this->zeroAllVariables();
-    this->validateSetMotors();
+    this->zeroSetVars();
     set_LMF = true;
     set_RMR = true;
     this->validateSetMotors();
   }
 
   void stop(){
-    this->zeroAllVariables();
-    this->validateSetMotors();
+    this->zeroSetVars();
   }
 
 };
