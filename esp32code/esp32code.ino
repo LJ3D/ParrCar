@@ -1,5 +1,5 @@
 #include <WiFi.h>
-#include <WiFiUdp.h>
+#include <WiFiServer.h>
 
 #include "safeMotorControl.h"
 
@@ -13,9 +13,12 @@
 #define PORT 52727
 #define WAP_SSID "A"
 #define WAP_PASS "AAAAAAAA"
+#define MAX_PACKET_SIZE 255
 
 safeMotorControl motorControl(LMF_PIN_MACRO, LMR_PIN_MACRO, RMF_PIN_MACRO, RMR_PIN_MACRO);
-WiFiUDP Udp;
+
+WiFiServer server(PORT);
+WiFiClient remoteClient;
 
 void setup(){
   motorControl.stop(); // Absolutely ensure that none of the motor pins are active (dont really need to do this, the class does it itself)
@@ -26,28 +29,48 @@ void setup(){
     delay(500);
     Serial.print(".");
   }
-  Serial.println();
-  Serial.print("Connected, IP address: ");
+  // Set stuff up to listen for incoming data:
+  server.begin();
+  Serial.println("Connected and set up (probably)");
   Serial.println(WiFi.localIP());
-  Serial.print("Beginning UDP port on ");
-  Serial.println(PORT);
-  Udp.begin(PORT);
+}
+
+
+
+
+void checkForConnections(){
+  if(server.hasClient()){
+    if(remoteClient.connected()){
+      Serial.println("Rejected connection - already have connected client");
+      server.available().stop();
+    }else{
+      Serial.println("Connection accepted");
+      remoteClient = server.available();
+    }
+  }
+}
+
+void echoOnce(){
+  uint8_t receiveBuffer[32];
+  int received = remoteClient.read(receiveBuffer, sizeof(receiveBuffer));
+  remoteClient.write(receiveBuffer, received);
+}
+
+void mainloop(){
+  // Drive forward for a bit
+  motorControl.driveForward();
+  delay(500);
+  motorControl.stop();
+  // Send wifi data
+  remoteClient.write("AMONG US");
+  delay(500);
 }
 
 void loop() {
-  motorControl.driveForward();
-  delay(1000);
-  motorControl.driveBackward();
-  delay(1000);
-  motorControl.turnLeft();
-  delay(1000);
-  motorControl.turnRight();
-  delay(1000);
-  motorControl.stop();
-  delay(1000);
-  // Send test data over wifi to 192.168.159.25
-  Udp.beginPacket("192.168.159.25", PORT);
-  size_t x = Udp.println("AMONG US");
-  Serial.println(x);
-  Udp.endPacket();
+  Serial.println("Checking for connection...");
+  checkForConnections();
+  if(remoteClient.connected()){
+    mainloop();
+  }
+  delay(50);
 }
