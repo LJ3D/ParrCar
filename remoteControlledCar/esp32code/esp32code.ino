@@ -1,7 +1,9 @@
 // Wifi libs:
 #include <WiFi.h>
 #include <WiFiMulti.h>
-
+// Stuff for compass:
+#include <Wire.h>
+#include <QMC5883LCompass.h>
 // My class for ensuring I dont explode anything:
 #include "safeMotorControl.h" 
 
@@ -11,6 +13,10 @@
 #define LMR_PIN_MACRO 16 // Left Motor Reverse
 #define RMF_PIN_MACRO 5 // Right Motor Forward
 #define RMR_PIN_MACRO 17 // Right Motor Reverse
+#define triggerPin 25 // Trigger pin for ultrasonic sensor
+#define echoPin 26 // Echo pin for ultrasonic sensor
+#define compassSDA 21 // SDA pin for compass
+#define compassSCL 22 // SCL pin for compass
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 // Some less critical macros:
@@ -23,10 +29,73 @@
 // Some class objects:
 safeMotorControl mc(LMF_PIN_MACRO, LMR_PIN_MACRO, RMF_PIN_MACRO, RMR_PIN_MACRO); // Create a motor controller object - ALWAYS CHECK THE PINS !!!
 WiFiMulti wm; // Dont really need to use wifimulti since there is only one network, but theres no downside to it
+QMC5883LCompass compass;
 
 
-// Set up the serial and wifi:
+// This function returns a distance measurement in cm from the ultrasonic sensor
+int getDistance(){
+  long duration, distance;
+  digitalWrite(triggerPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(triggerPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(triggerPin, LOW);
+  duration = pulseIn(echoPin, HIGH);
+  distance = duration*0.034/2;
+  return distance;
+}
+
+// Takes a command (char) and returns an integer representing either success/failure or a value (sensor reading)
+int processCommand(char cmd, WiFiClient c){
+  if(cmd == 'W' || cmd == 'w'){
+    mc.driveForward();
+    c.write("OK");
+    return 1; // Success
+  }
+  else if(cmd == 'S' || cmd == 's'){
+    mc.driveBackward();
+    c.write("OK");
+    return 1; // Success
+  }
+  else if(cmd == 'A' || cmd == 'a'){
+    mc.turnLeft();
+    c.write("OK");
+    return 1; // Success
+  }
+  else if(cmd == 'D' || cmd == 'd'){
+    mc.turnRight();
+    c.write("OK");
+    return 1; // Success
+  }
+  else if(cmd == 'Q' || cmd == 'q'){
+    mc.stop();
+    c.write("OK");
+    return 1; // Success
+  }
+  else if(cmd == '1'){
+    int distance = getDistance();
+    char distanceString[10];
+    sprintf(distanceString, "%d", distance);
+    c.write(distanceString);
+    return distance; // Return the distance
+  }
+  else if(cmd == '2'){
+    compass.read();
+    int y = compass.getY();
+    char yString[10];
+    sprintf(yString, "%d", y);
+    c.write(yString);
+    return y;
+  }
+  return 0; // Failure
+}
+
+// The setup function runs once when you press reset or power the board
 void setup(){
+  // Distance sensor pin setup:
+  pinMode(triggerPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  compass.init();
   mc.stop(); // Ensure motors arent spinning
   Serial.begin(115200); 
   WiFi.mode(WIFI_STA); // Fixes laggy wifi i think
@@ -40,7 +109,7 @@ void setup(){
   delay(500); // A little delay to make sure everything is ready cant hurt
 }
 
-// The main loop:
+// The main loop (runs forever after setup)
 void loop(){
   // Let the serial port know where we are connecting to
   Serial.print("Connecting to ");
@@ -58,37 +127,14 @@ void loop(){
   // Main loop while connected:
   Serial.println("Connected");
   while(c.connected()){
-    // Read data from the connection:
-    char cmd[MAX_PACKET_SIZE];
-    c.read((uint8_t*)cmd, MAX_PACKET_SIZE);
-    // Let the serial port know what we got:
-    Serial.print("Received command: ");
-    Serial.println(cmd);
-    // Simple switch for the commands:
-    switch(cmd[0]){ // The first byte is the command - any other bytes received are ignored
-      case 'w':
-      case 'W': // Not case-sensitive :)
-        mc.driveForward();
-        break;
-      case 's':
-      case 'S':
-        mc.driveBackward();
-        break;
-      case 'a':
-      case 'A':
-        mc.turnLeft();
-        break;
-      case 'd':
-      case 'D':
-        mc.turnRight();
-        break;
-      case 'q':
-      case 'Q':
-        mc.stop();
-        break;
-      default:
-        Serial.println("Invalid command");
-        break;
+    if(c.available()){
+      char cmd[MAX_PACKET_SIZE];
+      c.read((uint8_t*)cmd, MAX_PACKET_SIZE);
+      Serial.print(cmd);
+      Serial.print(" -> ");
+      Serial.println(processCommand(cmd[0], c));
+      // Flush the buffer:
+      c.flush();
     }
   }
   Serial.println("!!! Disconnected from server !!!");

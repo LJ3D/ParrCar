@@ -2,9 +2,12 @@
 #include <WiFi.h>
 #include <WiFiMulti.h>
 
-// My class for ensuring I dont explode anything:
-#include "safeMotorControl.h" 
+// Stuff for compass:
+#include <Wire.h>
+#include <QMC5883LCompass.h>
 
+// My class for ensuring I dont explode anything:
+#include "safeMotorControl.h"
 
 // !!!!!!!!!!!! DONT MESS UP THE PIN NUMBERS !!!!!!!!!!!!
 #define LMF_PIN_MACRO 4 // Left Motor Forward
@@ -27,6 +30,7 @@
 // Some class objects:
 safeMotorControl mc(LMF_PIN_MACRO, LMR_PIN_MACRO, RMF_PIN_MACRO, RMR_PIN_MACRO); // Create a motor controller object - ALWAYS CHECK THE PINS !!!
 WiFiMulti wm; // Dont really need to use wifimulti since there is only one network, but theres no downside to it
+QMC5883LCompass compass;
 
 // This function returns a distance measurement in cm from the ultrasonic sensor
 int getDistance(){
@@ -58,6 +62,7 @@ void setup(){
   }
   Serial.println("Connected to WiFi");
   Serial.println(WiFi.localIP());
+  compass.init();
   delay(500); // A little delay to make sure everything is ready cant hurt
 }
 
@@ -79,10 +84,11 @@ void loop(){
   // Main loop while connected:
   Serial.println("Connected");
   while(c.connected()){
-    // Get distance sensor reading and send it to the server:
-    int distance = getDistance();
-    c.println(distance);
-    delay(20);
+    compass.read(); // Get compass values
+    // Assemble a string to send to the server:
+    std::string msg = std::to_string(getDistance()) + " | " + std::to_string(compass.getY());
+    c.println(msg.c_str());
+    delay(500);
   }
   Serial.println("!!! Disconnected from server !!!");
 }

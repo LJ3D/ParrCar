@@ -58,9 +58,10 @@ int main(){
         perror("accept");
         exit(EXIT_FAILURE);
     }
-    mvwprintw(win, 2, 0, "Connected to client");
+    mvwprintw(win, 2, 0, "Connected to client        ");
     wrefresh(win);
     // The main control loop:
+    int i = 0;
     while(true){
         mvwprintw(win, 0, 0, "Press a key to send to client (press e to exit)");
         wrefresh(win);
@@ -69,12 +70,16 @@ int main(){
             break; // Exit the main loop if the user wants to
         }
         int bytes_sent = -1;
-        if(c != ERR){ // As long as getch didnt give us an error, send c+"\n" to the car
+        if(c != ERR){ // As long as getch didnt give us an error, send c to the car
             std::string s(1, c);
-            s += '\n';
             bytes_sent = send(new_socket, (s.c_str()), s.length(), 0);
         }
-        mvwprintw(win, 1, 0, "Sent %d bytes", bytes_sent);
+        mvwprintw(win, 1, 0, "Sent command number %d to client", i);
+        i++;
+        // Receive a message from the client:
+        char buffer[1024] = {0};
+        int valread = read(new_socket, buffer, 1024);
+        mvwprintw(win, 3, 0, "Received message from client: %s           ", buffer);
         wrefresh(win);
     }
     endwin(); // End ncurses
