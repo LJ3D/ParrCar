@@ -49,43 +49,59 @@ int getDistance(){
 int processCommand(char cmd, WiFiClient c){
   if(cmd == 'W' || cmd == 'w'){
     mc.driveForward();
-    c.write("OK");
+    c.write("OK\n");
     return 1; // Success
   }
   else if(cmd == 'S' || cmd == 's'){
     mc.driveBackward();
-    c.write("OK");
+    c.write("OK\n");
     return 1; // Success
   }
   else if(cmd == 'A' || cmd == 'a'){
     mc.turnLeft();
-    c.write("OK");
+    c.write("OK\n");
     return 1; // Success
   }
   else if(cmd == 'D' || cmd == 'd'){
     mc.turnRight();
-    c.write("OK");
+    c.write("OK\n");
     return 1; // Success
   }
   else if(cmd == 'Q' || cmd == 'q'){
     mc.stop();
-    c.write("OK");
+    c.write("OK\n");
     return 1; // Success
   }
   else if(cmd == '1'){
     int distance = getDistance();
-    char distanceString[10];
-    sprintf(distanceString, "%d", distance);
+    char distanceString[11];
+    sprintf(distanceString, "%d\n", distance);
     c.write(distanceString);
     return distance; // Return the distance
   }
   else if(cmd == '2'){
     compass.read();
-    int y = compass.getY();
-    char yString[10];
-    sprintf(yString, "%d", y);
-    c.write(yString);
-    return y;
+    int compreading = compass.getX();
+    char compStr[11];
+    sprintf(compStr, "%d\n", compreading);
+    c.write(compStr);
+    return compreading;
+  }
+  else if(cmd == '3'){
+    compass.read();
+    int compreading = compass.getY();
+    char compStr[11];
+    sprintf(compStr, "%d\n", compreading);
+    c.write(compStr);
+    return compreading;
+  }
+  else if(cmd == '4'){
+    compass.read();
+    int compreading = compass.getZ();
+    char compStr[11];
+    sprintf(compStr, "%d\n", compreading);
+    c.write(compStr);
+    return compreading;
   }
   return 0; // Failure
 }
