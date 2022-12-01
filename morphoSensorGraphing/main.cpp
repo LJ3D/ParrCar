@@ -30,7 +30,7 @@ int main(){
     gv->setlimits(-1, limit, -5000, 5000);
     gv2->setlimits(-1, limit, -5000, 5000);
     gv3->setlimits(-1, limit, -5000, 5000);
-    gv4->setlimits(-1, limit, 0, 680);
+    gv4->setlimits(-1, limit, 0, 360);
     gv->policy = morph::stylepolicy::lines; // markers, lines, both, allcolour
     gv2->policy = morph::stylepolicy::lines; // markers, lines, both, allcolour
     gv3->policy = morph::stylepolicy::lines; // markers, lines, both, allcolour
