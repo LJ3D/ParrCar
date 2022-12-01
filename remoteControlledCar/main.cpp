@@ -1,4 +1,4 @@
-#include <ncurses.h> // Using ncurses mainly for getch() lol
+w#include <ncurses.h> // Using ncurses mainly for getch() lol
 #include <string>
 #include <unistd.h> 
 #include <sys/socket.h> 

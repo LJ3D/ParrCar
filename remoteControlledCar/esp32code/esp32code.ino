@@ -87,7 +87,9 @@ int processCommand(char cmd, WiFiClient c){
     c.write(compStr);
     return compreading;
   }
-  return 0; // Failure
+  // Failure:
+  c.write("INVALIDCMD");
+  return 0;
 }
 
 // The setup function runs once when you press reset or power the board

@@ -1,7 +1,7 @@
 // The safeMotoControl class performs validation on all motor control commands
 // This class is specific to this project
 class safeMotorControl{
-private:
+protected:
   bool set_LMF = false;
   bool set_LMR = false;
   bool set_RMF = false;

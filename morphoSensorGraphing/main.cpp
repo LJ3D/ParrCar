@@ -20,40 +20,19 @@ int main(){
     v.lightingEffects(); // Enables lighting (shadows etc) to 3D objects
     morph::GraphVisual<float>* gv = new morph::GraphVisual<float>(v.shaderprog, v.tshaderprog, {0, 0, 0});
     morph::GraphVisual<float>* gv2 = new morph::GraphVisual<float>(v.shaderprog, v.tshaderprog, {0, 1.2, 0});
-    morph::GraphVisual<float>* gv3 = new morph::GraphVisual<float>(v.shaderprog, v.tshaderprog, {0, 2.4, 0});
-    morph::GraphVisual<float>* gv4 = new morph::GraphVisual<float>(v.shaderprog, v.tshaderprog, {0, 3.6, 0});
-    morph::GraphVisual<float>* gv5 = new morph::GraphVisual<float>(v.shaderprog, v.tshaderprog, {5, 0, 0});
     gv->setsize(4, 1);
     gv2->setsize(4, 1);
-    gv3->setsize(4, 1);
-    gv4->setsize(4, 1);
-    gv5->setsize(4, 4);
     int limit = 256;
-    gv->setlimits(-1, limit, -5000, 5000);
-    gv2->setlimits(-1, limit, -5000, 5000);
-    gv3->setlimits(-1, limit, -5000, 5000);
-    gv4->setlimits(-1, limit, 0, 360);
-    gv5->setlimits(-1, limit, 0, 250);
+    gv->setlimits(-1, limit, 0, 360);
+    gv2->setlimits(-1, limit, 0, 250);
     gv->policy = morph::stylepolicy::lines; // markers, lines, both, allcolour
-    gv2->policy = morph::stylepolicy::lines; // markers, lines, both, allcolour
-    gv3->policy = morph::stylepolicy::lines; // markers, lines, both, allcolour
-    gv4->policy = morph::stylepolicy::lines;
-    gv5->policy = morph::stylepolicy::lines;
-    gv->prepdata("compassX", morph::axisside::left);
-    gv2->prepdata("compassY", morph::axisside::left);
-    gv3->prepdata("compassZ", morph::axisside::left);
-    gv4->prepdata("azimuthYX", morph::axisside::left);
-    gv5->prepdata("sonicDistance", morph::axisside::left);
-    gv->finalize();
+    gv2->policy = morph::stylepolicy::lines;
+    gv->prepdata("azimuth", morph::axisside::left);
+    gv2->prepdata("distance", morph::axisside::left);
+    gv->finalize(); // Finalize the graph (whatever that means)
     gv2->finalize();
-    gv3->finalize();
-    gv4->finalize();
-    gv5->finalize();
     v.addVisualModel(static_cast<morph::VisualModel*>(gv)); // Add the GraphVisual (as a VisualModel*)
-    v.addVisualModel(static_cast<morph::VisualModel*>(gv2)); // Add the GraphVisual (as a VisualModel*)
-    v.addVisualModel(static_cast<morph::VisualModel*>(gv3)); // Add the GraphVisual (as a VisualModel*)
-    v.addVisualModel(static_cast<morph::VisualModel*>(gv4));
-    v.addVisualModel(static_cast<morph::VisualModel*>(gv5));
+    v.addVisualModel(static_cast<morph::VisualModel*>(gv2));
 
     // Socket stuff
     int fd; // The file descriptor for the socket
@@ -95,34 +74,52 @@ int main(){
         int x = atoi(buffer);
         gv->append(i, x, 0);
 
-        send(fd, "3", 1, 0); // 2 = X, 3 = Y, 4 = Z
-        memset(buffer, 0, 32);
-        read(fd, buffer, 32);
-        int y = atoi(buffer);
-        gv2->append(i, y, 0);
-
-        send(fd, "4", 1, 0); // 2 = X, 3 = Y, 4 = Z
-        memset(buffer, 0, 32);
-        read(fd, buffer, 32);
-        int z = atoi(buffer);
-        gv3->append(i, z, 0);
-
-        int a = atan2(y,x)*180/3.1415;
-        gv4->append(i, (a<0)?360+a:a, 0);
-
         send(fd, "1", 1, 0);
         memset(buffer, 0, 32);
         read(fd, buffer, 32);
         int dist = atoi(buffer);
-        gv5->append(i, dist, 0);
+        gv2->append(i, dist, 0);
+
+        if(glfwGetKey(v.window, GLFW_KEY_UP)){
+            send(fd, "w", 1, 0);
+            // Receive reply:
+            memset(buffer, 0, 32);
+            read(fd, buffer, 32);
+            printf("Received: %s\n", buffer);
+        }
+        if(glfwGetKey(v.window, GLFW_KEY_LEFT) == GLFW_PRESS){
+            send(fd, "a", 1, 0);
+            // Receive reply:
+            memset(buffer, 0, 32);
+            read(fd, buffer, 32);
+            printf("Received: %s\n", buffer);
+        }
+        if(glfwGetKey(v.window, GLFW_KEY_DOWN) == GLFW_PRESS){
+            send(fd, "s", 1, 0);
+            // Receive reply:
+            memset(buffer, 0, 32);
+            read(fd, buffer, 32);
+            printf("Received: %s\n", buffer);
+        }
+        if(glfwGetKey(v.window, GLFW_KEY_RIGHT) == GLFW_PRESS){
+            send(fd, "d", 1, 0);
+            // Receive reply:
+            memset(buffer, 0, 32);
+            read(fd, buffer, 32);
+            printf("Received: %s\n", buffer);
+        }
+        if(glfwGetKey(v.window, GLFW_KEY_Q) == GLFW_PRESS){
+            send(fd, "q", 1, 0);
+            // Receive reply:
+            memset(buffer, 0, 32);
+            read(fd, buffer, 32);
+            printf("Received: %s\n", buffer);
+        }
 
         if(i++ > limit){ // Reset the graphs if they get too big
             i = 0;
             gv->clear();
             gv2->clear();
-            gv3->clear();
-            gv4->clear();
-            gv5->clear();
         }
 
         v.render(); // Render the graph
