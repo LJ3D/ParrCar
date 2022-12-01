@@ -4,7 +4,7 @@
 #include <sys/socket.h> 
 #include <arpa/inet.h> 
 
-#define SERV_PORT 52727 // The port the server is listening on
+#define SERV_PORT 52727 // The port the server is listening on (and we are connecting to)
 
 int main(){
     // Initialise ncurses:
@@ -33,32 +33,17 @@ int main(){
     }
 
     // Set the address:
-    address.sin_addr.s_addr = INADDR_ANY; // Listen on all interfaces
+    address.sin_addr.s_addr = inet_addr("192.168.1.1");
     address.sin_family = AF_INET;
-    address.sin_port = htons(SERV_PORT); // Listen on the specified port
+    address.sin_port = htons(SERV_PORT); // Connect to the server on port SERV_PORT
 
-    // Bind the socket to the address:
-    if(bind(fd, (struct sockaddr *)&address, sizeof(address)) < 0){
-        perror("bind failed");
+    // Connect to the server:
+    if(connect(fd, (struct sockaddr *)&address, sizeof(address)) < 0){
+        perror("Connection failed");
         exit(EXIT_FAILURE);
     }
 
-    // Listen for connections:
-    if(listen(fd, 3) < 0){
-        perror("listen");
-        exit(EXIT_FAILURE);
-    }
-
-    // Wait for and accept a new connection:
-    int addrlen = sizeof(address);
-    int new_socket;
-    mvwprintw(win, 2, 0, "Waiting for connection...");
-    wrefresh(win);
-    if((new_socket = accept(fd, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0){
-        perror("accept");
-        exit(EXIT_FAILURE);
-    }
-    mvwprintw(win, 2, 0, "Connected to client        ");
+    mvwprintw(win, 2, 0, "Connected to client");
     wrefresh(win);
     // The main control loop:
     int i = 0;
@@ -72,13 +57,13 @@ int main(){
         int bytes_sent = -1;
         if(c != ERR){ // As long as getch didnt give us an error, send c to the car
             std::string s(1, c);
-            bytes_sent = send(new_socket, (s.c_str()), s.length(), 0);
+            bytes_sent = send(fd, (s.c_str()), s.length(), 0);
         }
         mvwprintw(win, 1, 0, "Sent command number %d to client", i);
         i++;
         // Receive a message from the client:
         char buffer[1024] = {0};
-        int valread = read(new_socket, buffer, 1024);
+        int valread = read(fd, buffer, 1024);
         mvwprintw(win, 3, 0, "Received message from client: %s           ", buffer);
         wrefresh(win);
     }

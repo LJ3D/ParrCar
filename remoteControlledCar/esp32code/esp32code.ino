@@ -1,6 +1,6 @@
 // Wifi libs:
 #include <WiFi.h>
-#include <WiFiMulti.h>
+#include <WiFiServer.h>
 // Stuff for compass:
 #include <Wire.h>
 #include <QMC5883LCompass.h>
@@ -20,16 +20,18 @@
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 // Some less critical macros:
-#define REMOTE_IP "192.168.1.140" // The address of the computer running the server
-#define REMOTE_PORT 52727 // The port the server is listening on
-#include "wifiInfo.h" // This info is not included in the repo for obvious reasons ;) SSID + PASS. Create your own file with this info in it. (#define WAP_SSID ____ and #define WAP_PASS ____)
+const char* AP_SSID = "IFTY_CANT_CODE"; // SSID for wifi
+const char* AP_PASSWORD = "123456789"; // Password for wifi
+#define SERVER_PORT 52727 // The port the server is listening on
 #define MAX_PACKET_SIZE 255 // Max packet size - 255 is overkill for simple remote control commands (2 bytes would be enough)
 
 
 // Some class objects:
 safeMotorControl mc(LMF_PIN_MACRO, LMR_PIN_MACRO, RMF_PIN_MACRO, RMR_PIN_MACRO); // Create a motor controller object - ALWAYS CHECK THE PINS !!!
-WiFiMulti wm; // Dont really need to use wifimulti since there is only one network, but theres no downside to it
 QMC5883LCompass compass;
+WiFiServer serv(SERVER_PORT);
+
+
 
 
 // This function returns a distance measurement in cm from the ultrasonic sensor
@@ -114,34 +116,17 @@ void setup(){
   compass.init();
   mc.stop(); // Ensure motors arent spinning
   Serial.begin(115200); 
-  WiFi.mode(WIFI_STA); // Fixes laggy wifi i think
-  wm.addAP(WAP_SSID, WAP_PASS); // Add the wifi network to the list of networks to connect to (there is only one for now)
-  while(wm.run() != WL_CONNECTED){ // While we are not connected to the network, keep trying to connect
-    Serial.print(".");
-    delay(100);
-  }
-  Serial.println("Connected to WiFi");
-  Serial.println(WiFi.localIP());
-  delay(500); // A little delay to make sure everything is ready cant hurt
+  WiFi.mode(WIFI_AP);
+  WiFi.softAPConfig(IPAddress(192, 168, 1, 1), IPAddress(192, 168, 1, 1), IPAddress(255, 255, 255, 0));
+  WiFi.softAP(AP_SSID, AP_PASSWORD); // Start the wifi
+  IPAddress IP = WiFi.softAPIP(); // Get the IP
+  Serial.print("AP IP address: ");
+  serv.begin(); // Start the server
 }
 
 // The main loop (runs forever after setup)
 void loop(){
-  // Let the serial port know where we are connecting to
-  Serial.print("Connecting to ");
-  Serial.print(REMOTE_IP);
-  Serial.print(":");
-  Serial.println(REMOTE_PORT);
-  // Create a client and connect to the server:
-  WiFiClient c;
-  if(!c.connect(REMOTE_IP, REMOTE_PORT)){ // If we cant connect, wait a bit and try again
-    Serial.println("Connection failed");
-    Serial.println("Retrying in 5 seconds");
-    delay(5000);
-    return;
-  }
-  // Main loop while connected:
-  Serial.println("Connected");
+  WiFiClient c = serv.available(); // Check if a client is connected
   while(c.connected()){
     if(c.available()){
       char cmd[MAX_PACKET_SIZE];
@@ -153,5 +138,6 @@ void loop(){
       c.flush();
     }
   }
-  Serial.println("!!! Disconnected from server !!!");
+  Serial.println("!!! No client connected !!!");
+  delay(5000);
 }
