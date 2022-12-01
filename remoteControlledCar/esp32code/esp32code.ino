@@ -7,7 +7,6 @@
 // My class for ensuring I dont explode anything:
 #include "safeMotorControl.h" 
 
-
 // !!!!!!!!!!!! DONT MESS UP THE PIN NUMBERS !!!!!!!!!!!!
 #define LMF_PIN_MACRO 4 // Left Motor Forward
 #define LMR_PIN_MACRO 16 // Left Motor Reverse
@@ -24,7 +23,6 @@ const char* AP_SSID = "IFTY_CANT_CODE"; // SSID for wifi
 const char* AP_PASSWORD = "123456789"; // Password for wifi
 #define SERVER_PORT 52727 // The port the server is listening on
 #define MAX_PACKET_SIZE 255 // Max packet size - 255 is overkill for simple remote control commands (2 bytes would be enough)
-
 
 // Some class objects:
 safeMotorControl mc(LMF_PIN_MACRO, LMR_PIN_MACRO, RMF_PIN_MACRO, RMR_PIN_MACRO); // Create a motor controller object - ALWAYS CHECK THE PINS !!!
