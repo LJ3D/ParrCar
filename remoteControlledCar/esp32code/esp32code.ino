@@ -81,23 +81,7 @@ int processCommand(char cmd, WiFiClient c){
   }
   else if(cmd == '2'){
     compass.read();
-    int compreading = compass.getX();
-    char compStr[11];
-    sprintf(compStr, "%d\n", compreading);
-    c.write(compStr);
-    return compreading;
-  }
-  else if(cmd == '3'){
-    compass.read();
-    int compreading = compass.getY();
-    char compStr[11];
-    sprintf(compStr, "%d\n", compreading);
-    c.write(compStr);
-    return compreading;
-  }
-  else if(cmd == '4'){
-    compass.read();
-    int compreading = compass.getZ();
+    int compreading = compass.getAzimuth();
     char compStr[11];
     sprintf(compStr, "%d\n", compreading);
     c.write(compStr);
