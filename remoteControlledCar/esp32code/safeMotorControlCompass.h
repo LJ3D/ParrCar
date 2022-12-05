@@ -3,17 +3,16 @@
 
 class safeMotorControlCompass : public safeMotorControl{
 protected:
-QMC5883LCompass compass
-    
+QMC5883LCompass* compass;
+
 public:
-    safeMotorControl(int LMF_PIN, int LMR_PIN, int RMF_PIN, int RMR_PIN, QMC5883LCompass compass){
+    safeMotorControlCompass(int LMF_PIN, int LMR_PIN, int RMF_PIN, int RMR_PIN, QMC5883LCompass* compass) : safeMotorControl(LMF_PIN, LMR_PIN, RMF_PIN, RMR_PIN){
         // Obviously this class can only save you if you set the pin numbers correctly! Always check them :)
         this->LMF_PIN = LMF_PIN;
         this->LMR_PIN = LMR_PIN;
         this->RMF_PIN = RMF_PIN;
         this->RMR_PIN = RMR_PIN;
         this->compass = compass;
-        this->client = client;
         pinMode(this->LMF_PIN, OUTPUT);
         pinMode(this->LMR_PIN, OUTPUT);
         pinMode(this->RMF_PIN, OUTPUT);
@@ -22,7 +21,12 @@ public:
     }
 
     void turnToBearing(int bearing){
-        this->zeroSetVars();
-        
+        this->stop();
+        int currentBearing = this->compass->getAzimuth();
+        while(currentBearing != bearing){
+            this->turnRight();
+            currentBearing = this->compass->getAzimuth();
+        }
+        this->stop();
     }
 };

@@ -5,7 +5,7 @@
 #include <Wire.h>
 #include <QMC5883LCompass.h>
 // My class for ensuring I dont explode anything:
-#include "safeMotorControl.h" 
+#include "safeMotorControlCompass.h" 
 
 // !!!!!!!!!!!! DONT MESS UP THE PIN NUMBERS !!!!!!!!!!!!
 #define LMF_PIN_MACRO 4 // Left Motor Forward
@@ -16,6 +16,7 @@
 #define echoPin 26 // Echo pin for ultrasonic sensor
 #define compassSDA 21 // SDA pin for compass
 #define compassSCL 22 // SCL pin for compass
+#define piezoPin 33 // Little speaker pin
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 // Some less critical macros:
@@ -25,8 +26,8 @@ const char* AP_PASSWORD = "123456789"; // Password for wifi
 #define MAX_PACKET_SIZE 255 // Max packet size - 255 is overkill for simple remote control commands (2 bytes would be enough)
 
 // Some class objects:
-safeMotorControl mc(LMF_PIN_MACRO, LMR_PIN_MACRO, RMF_PIN_MACRO, RMR_PIN_MACRO); // Create a motor controller object - ALWAYS CHECK THE PINS !!!
 QMC5883LCompass compass;
+safeMotorControlCompass mc(LMF_PIN_MACRO, LMR_PIN_MACRO, RMF_PIN_MACRO, RMR_PIN_MACRO, &compass);
 WiFiServer serv(SERVER_PORT);
 
 
@@ -94,6 +95,13 @@ int processCommand(char cmd, WiFiClient c){
 
 // The setup function runs once when you press reset or power the board
 void setup(){
+  pinMode(piezoPin, OUTPUT);
+  // Play a tune to the speaker:
+  for(int i=1; i<=11; i++){
+    tone(piezoPin, i*100, 100);
+  }
+  noTone(piezoPin);
+
   // Distance sensor pin setup:
   pinMode(triggerPin, OUTPUT);
   pinMode(echoPin, INPUT);
